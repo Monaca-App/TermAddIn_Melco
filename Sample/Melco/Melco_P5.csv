@@ -1,0 +1,137 @@
+; ==============================================================================
+; Term Macro Script: シーケンサデータ収集 (形式5)
+; 生成AI: Antigravity (Gemini 4 Carbon (Medium))
+; 対象システム: 三菱電機 MELSEC シーケンサ（計算機リンク 形式5 バイナリコード通信方式）
+; ==============================================================================
+TITLE, "シーケンサデータ収集 (形式5)"
+
+; ------------------------------------------------------------------------------
+; コマンド定義: PORT_OPEN (通信ポート接続)
+; ------------------------------------------------------------------------------
+COMMAND, "PORT_OPEN"
+,PARAM, BAUD, List, "ボーレート", "57600", "9600", "19200", "38400", "115200"
+,PARAM, PARITY, List, "パリティ", "O", "E", "N"
+,PARAM, DATA_BITS, List, "データ長", "8", "7"
+,PARAM, STOP_BITS, List, "ストップビット", "1", "2"
+,PARAM, FLOW_CTRL, List, "フロー制御", "NONE", "RTSCTS", "XONXOFF"
+,SEQUENCE, 10, Melsec_Mode, "$BAUD$,$PARITY$,$DATA_BITS$,$STOP_BITS$", "$FLOW_CTRL$", "P5"
+,SEQUENCE, 20, Melsec_Open
+,SEQUENCE, 30, Exit
+
+; ------------------------------------------------------------------------------
+; コマンド定義: READ_START (読み出し開始・初期確認)
+; ------------------------------------------------------------------------------
+COMMAND, "READ_START", ON
+,PARAM, STATION_NO, Text, "局番号", "00"
+,PARAM, PC_NO, Text, "PC番号", "FF"
+,PARAM, CMD_READ, List, "読出コマンド(LE)", "0104", "0304"
+,PARAM, CMD_WRITE, List, "書込コマンド(LE)", "0114", "0214"
+,PARAM, SUBCMD, List, "サブコマンド(LE)", "0000", "0100", "8000", "8100"
+,PARAM, DEV_CODE, List, "デバイスコード", "B0", "A8", "B4", "AF", "A9", "B5", "C2", "C5", "90", "92", "93", "94", "A0", "9C", "9D", "C1", "C4"
+,PARAM, ADDR_STATUS, Text, "状態確認アドレス(LE)", "FE7F00"
+,PARAM, ADDR_CTRL, Text, "制御コマンドアドレス(LE)", "FF7F00"
+,PARAM, POINTS, Text, "アクセス点数(LE)", "0100"
+,PARAM, VAL_INIT_CTRL, Text, "初期確認設定値(LE)", "0400"
+,PARAM, STATUS, Work, "判定結果", ""
+,SEQUENCE, 10, Melsec_P5s_S, "$STATION_NO$$PC_NO$$CMD_READ$$SUBCMD$$DEV_CODE$$ADDR_STATUS$$POINTS$"
+,SEQUENCE, 20, Melsec_Res_P5s_R, "$STATION_NO$", "STATUS", "DEC"
+,SEQUENCE, 30, Judge, EQU, "$STATUS$", "0x0000", #ERR_EXIT#
+,SEQUENCE, 40, Melsec_P5s_S, "$STATION_NO$$PC_NO$$CMD_WRITE$$SUBCMD$$DEV_CODE$$ADDR_CTRL$$POINTS$$VAL_INIT_CTRL$"
+,SEQUENCE, 50, Melsec_Res_P5s_R, "$STATION_NO$", "STATUS"
+,SEQUENCE, 60, Judge, EQU, "$STATUS$", "ACK", #ERR_EXIT#
+,SEQUENCE, 70, Exit
+,SEQUENCE, #ERR_EXIT#, Exit
+
+; ------------------------------------------------------------------------------
+; コマンド定義: NUM_READ (数値データ読み出し)
+; ------------------------------------------------------------------------------
+COMMAND, "NUM_READ", "RESULT_DATA"
+,PARAM, STATION_NO, Text, "局番号", "00"
+,PARAM, PC_NO, Text, "PC番号", "FF"
+,PARAM, CMD_READ, List, "読出コマンド(LE)", "0104", "0304"
+,PARAM, CMD_WRITE, List, "書込コマンド(LE)", "0114", "0214"
+,PARAM, SUBCMD, List, "サブコマンド(LE)", "0000", "0100", "8000", "8100"
+,PARAM, DEV_CODE, List, "デバイスコード", "B0", "A8", "B4", "AF", "A9", "B5", "C2", "C5", "90", "92", "93", "94", "A0", "9C", "9D", "C1", "C4"
+,PARAM, DEV_ADDR, Text, "読出デバイス番号(LE)", "208000"
+,PARAM, POINTS, Text, "読出点数(LE)", "0100"
+,PARAM, ADDR_CTRL, Text, "復旧制御アドレス(LE)", "FF7F00"
+,PARAM, VAL_RECOVERY, Text, "復旧制御設定値(LE)", "0200"
+,PARAM, RESULT_DATA, Range, "読出データ結果", ""
+,SEQUENCE, #RETRY#, Melsec_P5s_S, "$STATION_NO$$PC_NO$$CMD_READ$$SUBCMD$$DEV_CODE$$DEV_ADDR$$POINTS$"
+,SEQUENCE, 20, Melsec_Res_P5s_R, "$STATION_NO$", "RESULT_DATA", "DEC"
+,SEQUENCE, 30, Judge, NEQ, "$RESULT_DATA$", "ERROR_SUMCHECK", #RETRY_FAIL#
+,SEQUENCE, 40, Exit
+,SEQUENCE, #RETRY_FAIL#, Melsec_P5s_S, "$STATION_NO$$PC_NO$$CMD_WRITE$$SUBCMD$$DEV_CODE$$ADDR_CTRL$$POINTS$$VAL_RECOVERY$"
+,SEQUENCE, 60, Melsec_Res_P5s_R, "$STATION_NO$", "RESULT_DATA"
+,SEQUENCE, 70, Judge, EQU, "$RESULT_DATA$", "ACK", #RETRY#
+,SEQUENCE, 80, Exit
+
+; ------------------------------------------------------------------------------
+; コマンド定義: REG_READ (レジスタ一括読み出し)
+; ------------------------------------------------------------------------------
+COMMAND, "REG_READ", "RESULT_DATA"
+,PARAM, STATION_NO, Text, "局番号", "00"
+,PARAM, PC_NO, Text, "PC番号", "FF"
+,PARAM, CMD_READ, List, "読出コマンド(LE)", "0104", "0304"
+,PARAM, CMD_WRITE, List, "書込コマンド(LE)", "0114", "0214"
+,PARAM, SUBCMD, List, "サブコマンド(LE)", "0000", "0100", "8000", "8100"
+,PARAM, DEV_CODE, List, "デバイスコード", "B0", "A8", "B4", "AF", "A9", "B5", "C2", "C5", "90", "92", "93", "94", "A0", "9C", "9D", "C1", "C4"
+,PARAM, DEV_ADDR, Text, "読出デバイス番号(LE)", "208000"
+,PARAM, POINTS, Text, "読出点数(LE)", "0100"
+,PARAM, ADDR_CTRL, Text, "復旧制御アドレス(LE)", "FF7F00"
+,PARAM, VAL_RECOVERY, Text, "復旧制御設定値(LE)", "0200"
+,PARAM, RESULT_DATA, Range, "レジスタデータ", ""
+,SEQUENCE, #READ_START#, Melsec_P5s_S, "$STATION_NO$$PC_NO$$CMD_READ$$SUBCMD$$DEV_CODE$$DEV_ADDR$$POINTS$"
+,SEQUENCE, 20, Melsec_Res_P5s_R, "$STATION_NO$", "RESULT_DATA", "HEX"
+,SEQUENCE, 30, Judge, NEQ, "$RESULT_DATA$", "ERROR_SUMCHECK", #ERR_RECOVERY#
+,SEQUENCE, 40, Exit
+,SEQUENCE, #ERR_RECOVERY#, Melsec_P5s_S, "$STATION_NO$$PC_NO$$CMD_WRITE$$SUBCMD$$DEV_CODE$$ADDR_CTRL$$POINTS$$VAL_RECOVERY$"
+,SEQUENCE, 60, Melsec_Res_P5s_R, "$STATION_NO$", "RESULT_DATA"
+,SEQUENCE, 70, Judge, EQU, "$RESULT_DATA$", "ACK", #READ_START#
+,SEQUENCE, 80, Exit
+
+; ------------------------------------------------------------------------------
+; コマンド定義: READ_END (読み出し終了・復旧)
+; ------------------------------------------------------------------------------
+COMMAND, "READ_END", ON
+,PARAM, STATION_NO, Text, "局番号", "00"
+,PARAM, PC_NO, Text, "PC番号", "FF"
+,PARAM, CMD_READ, List, "読出コマンド(LE)", "0104", "0304"
+,PARAM, CMD_WRITE, List, "書込コマンド(LE)", "0114", "0214"
+,PARAM, SUBCMD, List, "サブコマンド(LE)", "0000", "0100", "8000", "8100"
+,PARAM, DEV_CODE, List, "デバイスコード", "B0", "A8", "B4", "AF", "A9", "B5", "C2", "C5", "90", "92", "93", "94", "A0", "9C", "9D", "C1", "C4"
+,PARAM, ADDR_STATUS, Text, "状態確認アドレス(LE)", "FE7F00"
+,PARAM, ADDR_CTRL, Text, "制御コマンドアドレス(LE)", "FF7F00"
+,PARAM, POINTS, Text, "アクセス点数(LE)", "0100"
+,PARAM, VAL_FINISH_1, Text, "終了処理設定値1(LE)", "0100"
+,PARAM, VAL_RESET, Text, "復旧初期設定値(LE)", "0000"
+,PARAM, STATUS, Work, "判定結果", ""
+,SEQUENCE, 10, Melsec_P5s_S, "$STATION_NO$$PC_NO$$CMD_WRITE$$SUBCMD$$DEV_CODE$$ADDR_CTRL$$POINTS$$VAL_FINISH_1$"
+,SEQUENCE, 20, Melsec_Res_P5s_R, "$STATION_NO$", "STATUS"
+,SEQUENCE, 30, Judge, EQU, "$STATUS$", "ACK", #ERR_EXIT#
+,SEQUENCE, #CHECK_LOOP#, Melsec_P5s_S, "$STATION_NO$$PC_NO$$CMD_READ$$SUBCMD$$DEV_CODE$$ADDR_STATUS$$POINTS$"
+,SEQUENCE, 50, Melsec_Res_P5s_R, "$STATION_NO$", "STATUS", "DEC"
+,SEQUENCE, 60, Judge, EQU, "$STATUS$", "0x0001", #CHECK_LOOP#
+,SEQUENCE, 70, Melsec_P5s_S, "$STATION_NO$$PC_NO$$CMD_WRITE$$SUBCMD$$DEV_CODE$$ADDR_CTRL$$POINTS$$VAL_RESET$"
+,SEQUENCE, 80, Melsec_Res_P5s_R, "$STATION_NO$", "STATUS"
+,SEQUENCE, 90, Judge, EQU, "$STATUS$", "ACK", #ERR_EXIT#
+,SEQUENCE, 100, Exit
+,SEQUENCE, #ERR_EXIT#, Exit
+
+; ------------------------------------------------------------------------------
+; コマンド定義: PORT_CLOSE (通信ポート切断)
+; ------------------------------------------------------------------------------
+COMMAND, "PORT_CLOSE"
+,PARAM, STATION_NO, Text, "局番号", "00"
+,PARAM, PC_NO, Text, "PC番号", "FF"
+,PARAM, CMD_WRITE, List, "書込コマンド(LE)", "0114", "0214"
+,PARAM, SUBCMD, List, "サブコマンド(LE)", "0000", "0100", "8000", "8100"
+,PARAM, DEV_CODE, List, "デバイスコード", "B0", "A8", "B4", "AF", "A9", "B5", "C2", "C5", "90", "92", "93", "94", "A0", "9C", "9D", "C1", "C4"
+,PARAM, ADDR_CTRL, Text, "制御コマンドアドレス(LE)", "FF7F00"
+,PARAM, POINTS, Text, "アクセス点数(LE)", "0100"
+,PARAM, VAL_RESET, Text, "復旧初期設定値(LE)", "0000"
+,PARAM, STATUS, Work, "判定結果", ""
+,SEQUENCE, 10, Melsec_P5s_S, "$STATION_NO$$PC_NO$$CMD_WRITE$$SUBCMD$$DEV_CODE$$ADDR_CTRL$$POINTS$$VAL_RESET$"
+,SEQUENCE, 20, Melsec_Res_P5s_R, "$STATION_NO$", "STATUS"
+,SEQUENCE, 30, Melsec_Close
+,SEQUENCE, 40, Exit

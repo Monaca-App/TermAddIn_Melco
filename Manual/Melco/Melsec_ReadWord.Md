@@ -1,7 +1,5 @@
 ﻿# コマンドリファレンス：Melsec_ReadWord
 
----
-
 ## 概要
 
 **Melsec_ReadWord** は、三菱電機 MELSEC シーケンサ（計算機リンクユニット / 通信ポート）に対してワード単位の一括読出要求（`WR` コマンド）を実行し、取得したデータを指定の変数またはセルへ格納する高水準通信コマンドです。
@@ -10,29 +8,7 @@
 
 > 💡 **補足**: 内部で使用される専用プロトコル形式（P1 / P2 / P3 / P4 / P5）および伝送待ち時間は、[Melsec_Mode](Melsec_Mode.Md) コマンドで設定された値（未指定時は P1 / 待ち時間 0ms）に自動追従します。
 
----
-
-## 💡 書式・パラメータ仕様
-
-### コマンド構文
-
-```csv
-,SEQUENCE,Melsec_ReadWord, "<StationNo>", "<Device>", "<Points>", "<VariableOrCell>", "[Format]"
-```
-
-### パラメータ（引数）一覧
-
-| 引数位置 | パラメータ名 | 必須/任意 | 型・制約 | 説明 |
-| :---: | :--- | :---: | :--- | :--- |
-| 第 1 引数 | `StationNo` | **必須** | 2 桁または 4 桁 16 進文字列（例: `"00"`, `"00FF"`） | 送信先の局番（2 桁指定時は自局 PC 番号 `"FF"` が自動補完されます）を指定します。 |
-| 第 2 引数 | `Device` | **必須** | デバイス文字列（例: `"D100"`, `"W10"`, `"R50"`, `"TN0"`, `"CN0"`） | 読み出しを開始する先頭ワードデバイス名を指定します。 |
-| 第 3 引数 | `Points` | **必須** | 1 〜 64（10 進数文字列） | 読み出し点数（ワード数）を指定します。 |
-| 第 4 引数 | `VariableOrCell` | **必須** | 変数名またはセル参照（例: `"@VAL"`, `"PARAM_VAL"`, `"A1"`） | 読み出したデータを格納する変数名またはセルアドレスを指定します。複数点数の場合はカンマ区切りで格納されます。 |
-| 第 5 引数 | `Format` | 任意 | `"HEX"` または `"DEC"`（既定値: `"HEX"`） | 格納する数値表現形式を指定します。 |
-
----
-
-## 🔄 対象ワードデバイス仕様
+### 🔄 対象ワードデバイス仕様
 
 | デバイス種別 | 表記例 | デバイスコード変換 | アドレス進数 |
 | :--- | :--- | :--- | :--- |
@@ -44,23 +20,115 @@
 
 ---
 
+## 💡 書式・パラメータ仕様
+
+### コマンド構文
+
+```csv
+,SEQUENCE, [ステップキー], Melsec_ReadWord, [Device], [Points], [ResultKey], "[Format: HEX]", "[StationNo: 00]"
+```
+
+### パラメータ（引数）一覧
+
+| 引数位置 | 引数名 | 必須/任意 | 説明・制約 |
+| :--- | :--- | :---: | :--- |
+| 第 1 引数 | `Device` | **必須** | 読み出しを開始する先頭ワードデバイス名（例: `"D100"`, `"W10"`, `"R50"`, `"TN0"`, `"CN0"`）。 |
+| 第 2 引数 | `Points` | **必須** | 連続して読み出すワード点数（`1`〜`64` の整数）。 |
+| 第 3 引数 | `ResultKey` | **必須** | 読み出したデータ値を格納する変数キー名またはセル参照。 |
+| 第 4 引数 | `Format` | 任意 | 格納する数値表現形式（`"HEX"` または `"DEC"`、省略時既定値: `"HEX"`）。 |
+| 第 5 引数 | `StationNo` | 任意 | 送信先の局番 2 桁 16 進文字列（省略時既定値: `"00"`、自局 PC 番号 `"FF"` は自動補完）。 |
+
+---
+
+## 🔄 特殊置換規約・分岐規約の適用
+
+本コマンドの引数における特殊記法および解釈ルールです。
+* **動的置換（`$`）**: 引数内で `$PARAMキー$` のように記述すると、実行時に変数プール（PARAM）の値へ動的置換されます。（適用可能な引数: 全引数対応）
+* **ジャンプ先指定（`#`）**: 本コマンドはジャンプ制御を行わないため適用されません。（適用可能な引数: 非適用）
+* **共通コマンド指定（`@`）**: 本コマンドは外部マクロを呼び出さないため、共通コマンド呼び出し記法は適用されません。（適用可能な引数: 非適用）
+* **カンマのエスケープ**: 通信条件文字列（例: `"9600,E,7,1"`）や複数データのカンマ区切り値を単一引数として渡す場合は、必ず `"..."` と二重引用符で囲んで記述します。
+* **エイリアス（別名）**: `Analysis_Melsec_ReadWord`, `Sqn_Melsec_ReadWord`
+
+---
+
 ## 💡 動作例（正しい構文での記述例）
 
 ### スクリプト記述例
 
+※COMMAND ブロック配下の子要素行（PARAM, SEQUENCE）は必ず行頭カンマから開始し、スペースインデントや行末コメント（`;`）は記述しないでください。
+
 ```csv
-,PARAM,READ_HEX_VAL,
-,PARAM,READ_DEC_VAL,
-
-,SEQUENCE,Melsec_Mode, "9600,O,7,1", "NONE", "P1"
-,SEQUENCE,Melsec_Open
-
-; 1. 局番 00、D100 から 1 ワード読出（16 進形式）
-,SEQUENCE,Melsec_ReadWord, "00", "D100", "1", "@READ_HEX_VAL", "HEX"
-
-; 2. 局番 00、D200 から 3 ワード読出（10 進形式）
-,SEQUENCE,Melsec_ReadWord, "00", "D200", "3", "@READ_DEC_VAL", "DEC"
-
-,SEQUENCE,Melsec_Close
-,SEQUENCE,Exit
+COMMAND, "MELSEC_READ_WORD_DEMO", "READ_DEC_VAL"
+,PARAM, "READ_HEX_VAL", Work, "16進読出結果", ""
+,PARAM, "READ_DEC_VAL", Work, "10進読出結果", ""
+,SEQUENCE, 010, Melsec_Mode, "9600,E,7,1", "NONE", "P1"
+,SEQUENCE, 020, Melsec_Open
+; D100 から 1 ワード読出（16進形式、局番 00）
+,SEQUENCE, 030, Melsec_ReadWord, "D100", 1, "READ_HEX_VAL", "HEX", "00"
+; D200 から 3 ワード読出（10進形式、局番 00）
+,SEQUENCE, 040, Melsec_ReadWord, "D200", 3, "READ_DEC_VAL", "DEC", "00"
+,SEQUENCE, 050, Melsec_Close
+,SEQUENCE, 060, Exit
 ```
+
+### 実行時の挙動・変数変化
+
+* **実行前の状態**: MELSEC 計算機リンク回線がオープン済みで、`"READ_HEX_VAL"` と `"READ_DEC_VAL"` が空文字列 `""` の状態。
+* **実行後の状態**: ステップ `030` で `D100` の 16 進文字列が `"READ_HEX_VAL"` に格納され、ステップ `040` で `D200`〜`D202` の 10 進カンマ区切り値が `"READ_DEC_VAL"` に格納されます。
+
+---
+
+## 🔄 動作フロー（シーケンス図）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Script as "シーケンス実行エンジン"
+    participant Cmd as "Melsec_ReadWordCommand"
+    participant Trans as "Melco 通信トランスポート"
+    participant Buf as "受信バッファ / 変数プール"
+
+    Script->>Cmd: Func(parent, param)
+    activate Cmd
+    Cmd->>Cmd: ライセンス・パラメータ範囲検証 ($PARAM$ 展開)
+    alt 引数および通信状態が正常な場合
+        Cmd->>Trans: プロトコル電文送受信 / 回線制御実行
+        Trans-->>Cmd: 正常応答フレーム / ステータス返却
+        Cmd->>Buf: 結果格納・状態更新 (IsCommandGo = true)
+        Cmd-->>Script: 正常完了 (次ステップへ進行)
+    else パラメータ不正・タイムアウト・異常応答の場合
+        Cmd->>Cmd: エラーログ出力 (_log.LogError)
+        Cmd-->>Script: 安全停止またはエラー結果格納
+    end
+    deactivate Cmd
+```
+
+---
+
+## 🚫 エラーハンドリング・安全設計（仕様制限）
+
+入力データの異常や実行時エラーに対し、解析・実行エンジンが実行するセーフティ規約です。
+
+1. **引数範囲・プロトコル書式バリデーション保護**:
+   - 必須引数の欠落、デバイス表記・数値範囲の不正、または余剰引数が指定された場合は `_log.LogError` に詳細を記録し、`SetErrorAndHalt` により異常電文の送出を未然に遮断します。
+2. **通信タイムアウト・異常応答・排他ドメイン保護**:
+   - 相手機器の無応答タイムアウト、NAK／異常終了コード応答、または他通信ドメインとの排他競合が発生した場合は、例外クラッシュを起こさず安全にエラーハンドリングを行います。
+
+---
+
+## 🧪 ユニットテスト仕様
+
+本コマンドクラス（`Melsec_ReadWordCommand.cs`）に実装されている `RunUnitTest()` メソッドが検証するユニットテストの仕様です。
+
+### テスト実行前提条件
+
+* **実行トリガー**: `RunUnitTest()` メソッドの呼び出し
+* **有効化条件**: システム全体の最小ログレベル（`ErrorLogger.MinimumLevel`）が `LogLevel.Test` であること（それ以外の場合は無効化ガードにより早期リターン）
+* **検証結果出力**: `_log.LogTest` によるログ出力。検証失敗時は `_log.LogError`、予期せぬ例外発生時は `_log.LogCritical` で記録し、`finally` ブロックで `Melsec_ModeCommand.DefaultProtocolType` および `UartTransportCore.Shared.IsSimulationMode` を開始前の状態へ復元します。
+
+### テストケース一覧
+
+| No | テストカテゴリ | テスト条件（入力値） | 期待される結果（出力値） | 検証の目的 / 観点 |
+| :---: | :--- | :--- | :--- | :--- |
+| **1** | 正常系 | `IsSimulationMode = true`・`DefaultProtocolType = "P4"` 環境下で引数 `"D100"`, `"2"`, `"RES_D"`, `"HEX"`, `"00"` および擬似応答（`STX + "00FF12345678" + ETX + SUM + CRLF`）を与えて実行 | `!param.HasError` かつ `param.IsCommandGo == true`、格納先 `SBuf["RES_D"]` が `"0x1234,0x5678"` と一致する | `WR` 一括読出フレーム構築・形式 4 応答解析・HEX カンマ区切り格納の検証 |
+| **2** | 異常系 | 点数範囲外（`1`〜`64` 外）、デバイス空指定、NAK／無応答（`"ERROR_RESPONSE"`）、または受信データ長不足（`"ERROR_LENGTH"`） | エラー識別子を `ResultKey` へ格納し、`_log.LogError` 出力と `SetErrorAndHalt` により安全に停止する | 点数境界チェックおよび NAK・データ長異常時のフェイルセーフ検証 |

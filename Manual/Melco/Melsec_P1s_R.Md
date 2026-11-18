@@ -1,7 +1,5 @@
 ﻿# コマンドリファレンス：Melsec_P1s_R
 
----
-
 ## 概要
 
 **Melsec_P1s_R** は、三菱電機 MELSEC 計算機リンク **専用プロトコル形式 1（サムチェック付き、CR/LF なし）** において、外部マスターまたはシーケンサから送信される要求電文（`ENQ [0x05]` 開始フレーム）を受信・解析し、局番・コマンド・データ長の検証および 2 桁 ASCII サムチェックの照合を行った上で、データ部を指定ターゲット変数へ格納するコマンドです。
@@ -15,7 +13,7 @@
 ### コマンド構文
 
 ```csv
-,SEQUENCE,Melsec_P1s_R, "<StationNo>", "<Command>", "<DataLength>", "<Target>"
+,SEQUENCE, [ステップキー], Melsec_P1s_R, "<StationNo>", "<Command>", "<DataLength>", "<Target>"
 ```
 
 ### パラメータ（引数）一覧
@@ -31,10 +29,12 @@
 
 ## 🔄 特殊置換規約・分岐規約の適用
 
-1. **変数展開（`$` / `@` / `#`）**:
-   - 第 1〜第 3 引数には変数を指定可能です（例: `"$ST_NO"`, `"$EXPECTED_CMD"`）。
-2. **レガシー別名互換**:
-   - 旧表記の `MELSEC_P1S_R` や `MelsecP1sR` は内部正規化により本 `Melsec_P1s_R` コマンドへ統一マッピングされます。
+本コマンドの引数における特殊記法および解釈ルールです。
+* **動的置換（`$`）**: 引数内で `$PARAMキー$` のように記述すると、実行時に変数プール（PARAM）の値へ動的置換されます。（適用可能な引数: 全引数対応）
+* **ジャンプ先指定（`#`）**: 本コマンドはジャンプ制御を行わないため適用されません。（適用可能な引数: 非適用）
+* **共通コマンド指定（`@`）**: 本コマンドは外部マクロを呼び出さないため、共通コマンド呼び出し記法は適用されません。（適用可能な引数: 非適用）
+* **カンマのエスケープ**: 通信条件文字列（例: `"9600,E,7,1"`）や複数データのカンマ区切り値を単一引数として渡す場合は、必ず `"..."` と二重引用符で囲んで記述します。
+* **エイリアス（別名）**: `P1s_R`, `Analysis_P1s_R`, `Sqn_Com_P1s_R`, `Analysis_SQN_COM_P1S_R`
 
 ---
 
@@ -42,22 +42,23 @@
 
 ### スクリプト記述例
 
+※COMMAND ブロック配下の子要素行（PARAM, SEQUENCE）は必ず行頭カンマから開始し、スペースインデントや行末コメント（`;`）は記述しないでください。
+
 ```csv
-,PARAM,RECV_PAYLOAD,
-
-,SEQUENCE,Melsec_Mode, "9600,O,7,1", "NONE", "P1"
-,SEQUENCE,Melsec_Open
-
+COMMAND, "SAMPLE_MELSEC_P1S_R", ""
+,PARAM, "RECV_PAYLOAD", Text, "RECV_PAYLOAD", ""
+,SEQUENCE, 010, Melsec_Mode, "9600,O,7,1", "NONE", "P1"
+,SEQUENCE, 020, Melsec_Open
 ; 局番00、ワード一括書込コマンド(WW)、データ部12文字の形式1フレームを受信し $RECV_PAYLOAD へ格納
-,SEQUENCE,Melsec_P1s_R, "00", "WW", "12", "$RECV_PAYLOAD"
-,SEQUENCE,Melsec_Close
-,SEQUENCE,Exit
+,SEQUENCE, 030, Melsec_P1s_R, "00", "WW", "12", "$RECV_PAYLOAD$"
+,SEQUENCE, 040, Melsec_Close
+,SEQUENCE, 050, Exit
 ```
 
 ### 実行時の挙動・変数変化
 
-1. 受信リングバッファから `ENQ (0x05)` + `"00FFWW0D0100011234"` + `Sum(2桁)` のフレームが到着するのを待機します。
-2. サムチェック 2 桁が一致し、局番 `"00"`・コマンド `"WW"` が一致すると、データ部 `"D0100011234"`（または伝送待ち時間を含む指定長文字列）が `$RECV_PAYLOAD` に格納されます。
+* **実行前の状態**: Term 通信エンジンが初期化され、必要な通信パラメータおよび変数プール（`PARAM`）が準備されている状態。
+* **実行後の状態**: 受信リングバッファから `ENQ (0x05)` + `"00FFWW0D0100011234"` + `Sum(2桁)` のフレームが到着するのを待機します。 サムチェック 2 桁が一致し、局番 `"00"`・コマンド `"WW"` が一致すると、データ部 `"D0100011234"`（または伝送待ち時間を含む指定長文字列）が `$RECV_PAYLOAD` に格納されます。
 
 ---
 
@@ -96,15 +97,17 @@ sequenceDiagram
 
 ## 🧪 ユニットテスト仕様
 
+本コマンドクラス（`Melsec_P1s_RCommand.cs`）に実装されている `RunUnitTest()` メソッドが検証するユニットテストの仕様です。
+
 ### テスト実行前提条件
-- **対象クラス**: `TermAnalysis.Melco.Melsec_P1s_RCommand`（`Melsec_P1s_RCommand.cs`）
-- **モック環境**: `TermRingBufferManager` に形式 1 フレームを投入できるテスト環境が構成されていること。
+
+* **実行トリガー**: `RunUnitTest()` メソッドの呼び出し
+* **有効化条件**: システム全体の最小ログレベル（`ErrorLogger.MinimumLevel`）が `LogLevel.Test` であること（それ以外の場合は無効化ガードにより早期リターン）
+* **検証結果出力**: `_log.LogTest` によるログ出力。検証失敗時は `_log.LogError`、予期せぬ例外発生時は `_log.LogCritical` で記録し、`finally` ブロックで `testSbuf?.Clear()`、`TermRingBufferManager.Instance.ClearBuffer()`、および `UartTransportCore.Shared.IsLoopbackMode` の復元を実行します。
 
 ### テストケース一覧
 
-| テストID | テスト観点 | 入力スクリプト | 期待される動作・検証項目 |
-| :--- | :--- | :--- | :--- |
-| `UT-MELSEC-P1SR-01` | 正常系（形式1要求受信） | `,SEQUENCE,Melsec_P1s_R, "00", "WR", "7", "$DATA"` | 正しいサムチェック付き `ENQ` フレームからデータ部 7 文字が `$DATA` に格納されること。 |
-| `UT-MELSEC-P1SR-02` | 異常系（サムチェック不一致） | サム値を改ざんしたフレーム投入時 | `MelsecProtocolException` が送出され、`$DATA` が書き換えられないこと。 |
-| `UT-MELSEC-P1SR-03` | 異常系（タイムアウト） | 受信データなし | `TimeoutException` が送出されること。 |
-
+| No | テストカテゴリ | テスト条件（入力値） | 期待される結果（出力値） | 検証の目的 / 観点 |
+| :---: | :--- | :--- | :--- | :--- |
+| **1** | 正常系 | `IsLoopbackMode = true` 環境下で引数 `"00"`, `"FFWW0D0000"`, `"2"`, `"MEL_RCV"` および擬似要求電文 `'\u0005' + "00FFWW0D0000021234ABCD" + SQNSUM(...)` を与えて実行 | `!param.HasError` かつ `param.IsCommandGo == true`、格納先 `SBuf["MEL_RCV"]` が `"0x1234,0xABCD"` と一致する | 形式 1 要求電文のサムチェック照合およびワードデータ抽出格納の検証 |
+| **2** | 異常系 | サムチェック不一致フレーム（末尾 `"00"`）および `Func(null, null)` を指定して実行 | サムチェック異常により `"ERROR_SUMCHECK"` が格納されて `!badParam.IsCommandGo` となり、`null` 入力でもクラッシュしない | サムチェック不一致検出および `null` パラメータに対する安全防御検証 |

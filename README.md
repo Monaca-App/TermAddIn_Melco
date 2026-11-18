@@ -24,7 +24,7 @@ VBA マクロを一切記述することなく、 **標準の `.xlsx`（マク�
 > [!NOTE]
 > **利用前提とライセンス体系**  
 > 本エクステンションは [TermAddIn 本体](https://github.com/Monaca-App/TermAddIn) 上で動作します。  
-> TermAddIn ではプロトコル毎に個別ライセンスを設ける体系を採用しており、本機能のご利用には **`TermAddIn_Melco` 個別ライセンス（料金未定・準備中）** が適用されます（現在は評価期間として全機能を無償でご試用いただけます）。
+> TermAddIn ではプロトコル毎に個別ライセンスを設ける体系を採用しており、本機能のご利用には **`TermAddIn_Melco` 個別ライセンス（料金未定・準備中）** が適用されます（なお、 **TermAddIn 本体** は現在 **近日公開** であり、全機能を無償でご試用いただける **評価期間は公開時に設定** いたします）。
 
 ---
 
@@ -73,11 +73,11 @@ VBA マクロを一切記述することなく、 **標準の `.xlsx`（マク�
 
 | プロトコル形式 | 送信コマンド | 要求受信コマンド | 応答受信・抽出コマンド |
 | :--- | :--- | :--- | :--- |
-| **形式 1**（対話＋サムチェック） | [**`Melsec_P1s_S`**](./Manual/Melco/Melsec_P1s_S.Md) | [**`Melsec_P1s_R`**](./Manual/Melco/Melsec_P1s_R.Md) | [**`Melsec_Res_P1s_R`**](./Manual/Melco/Melsec_Res_P1s_R.Md) |
-| **形式 2**（対話・サムチェックなし） | [**`Melsec_P2s_S`**](./Manual/Melco/Melsec_P2s_S.Md) | [**`Melsec_P2s_R`**](./Manual/Melco/Melsec_P2s_R.Md) | [**`Melsec_Res_P2s_R`**](./Manual/Melco/Melsec_Res_P2s_R.Md) |
-| **形式 3**（CR/LF終端・サムチェックなし） | [**`Melsec_P3s_S`**](./Manual/Melco/Melsec_P3s_S.Md) | [**`Melsec_P3s_R`**](./Manual/Melco/Melsec_P3s_R.Md) | [**`Melsec_Res_P3s_R`**](./Manual/Melco/Melsec_Res_P3s_R.Md) |
-| **形式 4**（CR/LF終端＋サムチェック） | [**`Melsec_P4s_S`**](./Manual/Melco/Melsec_P4s_S.Md) | [**`Melsec_P4s_R`**](./Manual/Melco/Melsec_P4s_R.Md) | [**`Melsec_Res_P4s_R`**](./Manual/Melco/Melsec_Res_P4s_R.Md) |
-| **形式 5**（高速バイナリ通信） | [**`Melsec_P5s_S`**](./Manual/Melco/Melsec_P5s_S.Md) | [**`Melsec_P5s_R`**](./Manual/Melco/Melsec_P5s_R.Md) | [**`Melsec_Res_P5s_R`**](./Manual/Melco/Melsec_Res_P5s_R.Md) |
+| **形式 1** （対話＋サムチェック） | [**`Melsec_P1s_S`**](./Manual/Melco/Melsec_P1s_S.Md) | [**`Melsec_P1s_R`**](./Manual/Melco/Melsec_P1s_R.Md) | [**`Melsec_Res_P1s_R`**](./Manual/Melco/Melsec_Res_P1s_R.Md) |
+| **形式 2** （対話・サムチェックなし） | [**`Melsec_P2s_S`**](./Manual/Melco/Melsec_P2s_S.Md) | [**`Melsec_P2s_R`**](./Manual/Melco/Melsec_P2s_R.Md) | [**`Melsec_Res_P2s_R`**](./Manual/Melco/Melsec_Res_P2s_R.Md) |
+| **形式 3** （CR/LF終端・サムチェックなし） | [**`Melsec_P3s_S`**](./Manual/Melco/Melsec_P3s_S.Md) | [**`Melsec_P3s_R`**](./Manual/Melco/Melsec_P3s_R.Md) | [**`Melsec_Res_P3s_R`**](./Manual/Melco/Melsec_Res_P3s_R.Md) |
+| **形式 4** （CR/LF終端＋サムチェック） | [**`Melsec_P4s_S`**](./Manual/Melco/Melsec_P4s_S.Md) | [**`Melsec_P4s_R`**](./Manual/Melco/Melsec_P4s_R.Md) | [**`Melsec_Res_P4s_R`**](./Manual/Melco/Melsec_Res_P4s_R.Md) |
+| **形式 5** （高速バイナリ通信） | [**`Melsec_P5s_S`**](./Manual/Melco/Melsec_P5s_S.Md) | [**`Melsec_P5s_R`**](./Manual/Melco/Melsec_P5s_R.Md) | [**`Melsec_Res_P5s_R`**](./Manual/Melco/Melsec_Res_P5s_R.Md) |
 
 ---
 
@@ -94,7 +94,7 @@ VBA マクロを一切記述することなく、 **標準の `.xlsx`（マク�
 
 ---
 
-## 🔰 シーケンス記述例（Excel セル設定）
+## 🔰 シーケンス記述例・同梱サンプル資材（`Sample/Melco/`）
 
 プロトコル 4（形式 4）を用いた MELSEC データレジスタ（D100）一括読出の構成例です。
 
@@ -116,6 +116,17 @@ VBA マクロを一切記述することなく、 **標準の `.xlsx`（マク�
 ,SEQUENCE, 080, Melsec_Close
 ```
 
+### 同梱サンプルマクロ・AI自動生成プロンプト集（形式 1 〜 形式 5）
+計算機リンクの全 5 形式それぞれに対応した動作確認用マクロスクリプト（CSV）および AI 自動生成プロンプトが **`Sample/Melco/`** に収録されています（Excel リボンの **「マニュアル配置 (`Make_Doc`)」** 実行時には `<設定場所>\Sample\TermAddIn\Melco\` へ自動展開されます）。
+
+| プロトコル形式 | サンプルマクロ（Shift-JIS CSV） | AI 自動生成プロンプト |
+| :--- | :--- | :--- |
+| **形式 1** （対話＋サムチェック） | [`Sample/Melco/Melco_P1.csv`](./Sample/Melco/Melco_P1.csv) | [`Sample/Melco/Melco_P1_prompt.md`](./Sample/Melco/Melco_P1_prompt.md) |
+| **形式 2** （対話・サムチェックなし） | [`Sample/Melco/Melco_P2.csv`](./Sample/Melco/Melco_P2.csv) | [`Sample/Melco/Melco_P2_prompt.md`](./Sample/Melco/Melco_P2_prompt.md) |
+| **形式 3** （CR/LF終端・サムチェックなし） | [`Sample/Melco/Melco_P3.csv`](./Sample/Melco/Melco_P3.csv) | [`Sample/Melco/Melco_P3_prompt.md`](./Sample/Melco/Melco_P3_prompt.md) |
+| **形式 4** （CR/LF終端＋サムチェック） | [`Sample/Melco/Melco_P4.csv`](./Sample/Melco/Melco_P4.csv) | [`Sample/Melco/Melco_P4_prompt.md`](./Sample/Melco/Melco_P4_prompt.md) |
+| **形式 5** （高速バイナリ通信） | [`Sample/Melco/Melco_P5.csv`](./Sample/Melco/Melco_P5.csv) | [`Sample/Melco/Melco_P5_prompt.md`](./Sample/Melco/Melco_P5_prompt.md) |
+
 ---
 
 ## 💳 ライセンス・購入プラン（TermAddIn_Melco）
@@ -124,7 +135,7 @@ VBA マクロを一切記述することなく、 **標準の `.xlsx`（マク�
 > **料金プランおよび正式販売について**  
 > 本エクステンション（`TermAddIn_Melco`）の販売料金およびライセンスプラン（買い切り・サブスクリプション）は **現在検討中（未定）** です。  
 > 正式な価格およびお申込み受付開始時期が決定次第、本ドキュメントおよび [Monaca アプリ工房ポータル](https://github.com/Monaca-App/store) にてご案内いたします。  
-> 現在は評価版として全機能をご試用いただけます。
+> なお、[TermAddIn 本体](https://github.com/Monaca-App/TermAddIn) は現在 **近日公開** となっており、全機能を無償でご試用いただける **評価期間は公開時に設定** いたします。
 
 | プラン | 価格 | お支払い・お申込み |
 | :--- | :---: | :---: |
