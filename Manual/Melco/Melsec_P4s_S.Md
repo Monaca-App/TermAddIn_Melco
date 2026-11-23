@@ -13,16 +13,18 @@
 ### コマンド構文
 
 ```csv
-,SEQUENCE, [ステップキー], Melsec_P4s_S, "<StationNo>", "<Command>", "<Data>"
+,SEQUENCE, [ステップキー], Melsec_P4s_S, [StationNoOrFrameData], "[Command]", "[Data]"
 ```
+
+※ `ParameterSpec` は `EnableVariableLength(true)` で定義され、実行時（`Func`）は `ValidateParamRange(1, 8)` により 1〜8 個の引数を受け付けて各トークンを順番にトリム連結します。
 
 ### パラメータ（引数）一覧
 
-| 引数位置 | パラメータ名 | 必須/任意 | 型・制約 | 説明 |
-| :---: | :--- | :---: | :--- | :--- |
-| 第1引数 | `StationNo` | **必須** | 2桁または4桁16進文字列（例: `"00"`, `"00FF"`） | 送信先の局番（2桁指定時は自局 PC 番号 `"FF"` が自動補完されます）を指定します。 |
-| 第2引数 | `Command` | **必須** | 2文字コマンド文字列（例: `"BR"`, `"WR"`, `"BW"`, `"WW"`） | 計算機リンクコマンド名を指定します。 |
-| 第3引数 | `Data` | **必須** | 文字列（伝送待ち時間＋先頭デバイス＋点数＋書込値） | コマンドに続くデータ部（例: `"0D010001"`）を指定します。 |
+| 引数位置 | 引数名 | 必須/任意 | 説明・制約 |
+| :--- | :--- | :---: | :--- |
+| 第 1 引数 | `StationNoOrFrameData` | **必須** | 複数引数指定時は送信先の **局番（2 桁）＋ PC 番号（2 桁）の計 4 文字（例: `"00FF"`）** または先頭局番部を指定します（※ PC 番号 `"FF"` の自動補完は行われません）。1 引数構文時は電文本体全体を直接指定可能です。 |
+| 第 2 引数 | `Command` | 任意 | 計算機リンクコマンド文字列（例: `"BR"`, `"WR"`, `"BW"`, `"WW"`、または PC 番号を含む `"FFWR0"` 等。省略時既定値: `""`）。 |
+| 第 3 引数 | `Data` | 任意 | コマンドに続くデータ部（伝送待ち時間＋先頭デバイス＋点数＋書込値、例: `"0D010001"`。省略時既定値: `""`）。第 4〜第 8 引数を分割指定した場合もすべて順番にトリム連結されます。 |
 
 ---
 
@@ -32,7 +34,7 @@
 * **動的置換（`$`）**: 引数内で `$PARAMキー$` のように記述すると、実行時に変数プール（PARAM）の値へ動的置換されます。（適用可能な引数: 全引数対応）
 * **ジャンプ先指定（`#`）**: 本コマンドはジャンプ制御を行わないため適用されません。（適用可能な引数: 非適用）
 * **共通コマンド指定（`@`）**: 本コマンドは外部マクロを呼び出さないため、共通コマンド呼び出し記法は適用されません。（適用可能な引数: 非適用）
-* **カンマのエスケープ**: 通信条件文字列（例: `"9600,E,7,1"`）や複数データのカンマ区切り値を単一引数として渡す場合は、必ず `"..."` と二重引用符で囲んで記述します。
+* **カンマのエスケープ**: 引数自体にカンマを含める場合は、必ず `"..."` と二重引用符で囲んで記述します。
 * **エイリアス（別名）**: `P4s_S`, `Analysis_P4s_S`, `Sqn_Com_P4s_S`, `Analysis_SQN_COM_P4S_S`
 
 ---
@@ -44,25 +46,31 @@
 ※COMMAND ブロック配下の子要素行（PARAM, SEQUENCE）は必ず行頭カンマから開始し、スペースインデントや行末コメント（`;`）は記述しないでください。
 
 ```csv
-COMMAND, "SAMPLE_MELSEC_P4S_S", ""
-,PARAM, "D_ADDR", Text, "D_ADDR", "D0100"
-,PARAM, "W_VAL", Text, "W_VAL", "0064"
+COMMAND, "SAMPLE_MELSEC_P4S_S", "READ_VAL"
+,PARAM, "D_ADDR", Text, "対象デバイスコード", "0D0100"
+,PARAM, "W_VAL", Text, "書込値HEX", "0064"
+,PARAM, "ACK_RES", Work, "書込応答結果", ""
+,PARAM, "READ_VAL", Work, "読出データ結果", ""
 ,SEQUENCE, 010, Melsec_Mode, "9600,O,7,1", "NONE", "P4"
 ,SEQUENCE, 020, Melsec_Open
-; 1. 局番00、D0100へ1ワード(0064h = 100)書込要求(WW)を形式4で送信
-,SEQUENCE, 030, Melsec_P4s_S, "00", "FFWW", "0$D_ADDR$01$W_VAL$"
-,SEQUENCE, 040, Melsec_Res_P4s_R, "00", "@ACK_RES"
-; 2. 局番00、D0100から1ワード読出要求(WR)を形式4で送信し、読出値を確認
-,SEQUENCE, 050, Melsec_P4s_S, "00", "FFWR", "0$D_ADDR$01"
-,SEQUENCE, 060, Melsec_Res_P4s_R, "00", "@READ_VAL"
-,SEQUENCE, 070, Melsec_Close
-,SEQUENCE, 080, Exit
+; 1. 局番00・PC番号FF、D0100へ1ワード(0064h = 100)書込要求(WW)を形式4で送信
+,SEQUENCE, 030, Melsec_P4s_S, "00FF", "WW", "0$D_ADDR$01$W_VAL$"
+,SEQUENCE, 040, Melsec_Res_P4s_R, "00", "ACK_RES"
+; 2. 局番00・PC番号FF、D0100から1ワード読出要求(WR)を形式4で送信し、読出値を確認
+,SEQUENCE, 050, Melsec_P4s_S, "00FF", "WR", "0$D_ADDR$01"
+,SEQUENCE, 060, Melsec_Res_P4s_R, "00", "READ_VAL"
+,SEQUENCE, 070, Judge, "EQU", "$READ_VAL$", "0x0064", "#NG_PROC#"
+,SEQUENCE, 080, Melsec_Close
+,SEQUENCE, 090, Exit, "$READ_VAL$", 0
+; 照合不一致時のクローズ＆異常終了経路
+,SEQUENCE, #NG_PROC#, Melsec_Close
+,SEQUENCE, 110, Exit, "NG", -1
 ```
 
 ### 実行時の挙動・変数変化
 
-* **実行前の状態**: Term 通信エンジンが初期化され、必要な通信パラメータおよび変数プール（`PARAM`）が準備されている状態。
-* **実行後の状態**: 1 回目の `Melsec_P4s_S` では、`[ENQ(0x05)] + "00FFWW0D0100010064" + [Sum2桁] + [CR][LF]` が構築・送信されます。 2 回目の `Melsec_P4s_S` では、`[ENQ(0x05)] + "00FFWR0D010001" + [Sum2桁] + [CR][LF]` が送信されます。
+* **実行前の状態**: Term 通信エンジンが初期化され、変数プール（`PARAM`）に `"D_ADDR"` (`"0D0100"`), `"W_VAL"` (`"0064"`), `"ACK_RES"`, `"READ_VAL"` が定義されている状態。
+* **実行後の状態**: 1 回目の `Melsec_P4s_S` では、`[ENQ(0x05)] + "00FFWW00D0100010064" + [Sum2桁] + [CR][LF]` が構築・送信され、応答 `"ACK"` が `"ACK_RES"` に格納されます。2 回目の `Melsec_P4s_S` では、`[ENQ(0x05)] + "00FFWR00D010001" + [Sum2桁] + [CR][LF]` が送信され、読出結果 `"0x0064"` が `"READ_VAL"` に格納されます。後続の `Judge` で一致が確認されると回線を閉じて正常終了し、不一致時は `#NG_PROC#` へ分岐してクローズ後に異常終了します。
 
 ---
 
@@ -71,34 +79,33 @@ COMMAND, "SAMPLE_MELSEC_P4S_S", ""
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Script as "スクリプト実行エンジン (SequenceRunner)"
-    participant Cmd as "Melsec_P4s_SCommand (TermAnalysis.Melco)"
-    participant Framing as "MelsecFrameEngine (形式4)"
-    participant Port as "SerialPort / MELSEC ドライバ"
+    participant Driver as "TermSequenceDriver (実行エンジン)"
+    participant Cmd as "Melsec_P4s_SCommand"
+    participant Port as "UartTransportCore / TermForm"
 
-    Script->>Cmd: Execute(context, stationNo, command, data)
-    Cmd->>Cmd: 引数の変数展開 ($ / @ / #)
-    Cmd->>Framing: BuildP4Frame(stationNo, command, data)
-    Framing->>Framing: PC番号("FF")補完 ＆ ASCIIサムチェック2桁算出
-    Framing-->>Cmd: [0x05(ENQ)] + Body + SumHex(2byte) + [0x0D(CR), 0x0A(LF)]
-    Cmd->>Port: Write(frameBytes)
-    Cmd-->>Script: 正常終了 (Next Step)
-    alt パラメータおよびプロトコル検証が正常な場合
-        Cmd-->>Script: 正常完了 (IsCommandGo = true)
-    else 引数範囲外または通信状態異常の場合
-        Cmd->>Cmd: エラーログ出力 (_log.LogError)
-        Cmd-->>Script: 安全停止 (SetErrorAndHalt)
+    Driver->>Driver: ライセンス検証 (ValidateStep)
+    Driver->>Cmd: Func(parent, param)
+    activate Cmd
+    Cmd->>Cmd: ValidateParamRange(1, 8) ＆ $PARAM$ マクロ展開
+    alt 引数個数が 1〜8 個の範囲内の場合
+        Cmd->>Cmd: BuildFrameBody (全引数を順次連結) ＆ SQNSUM(body) 2桁算出
+        Cmd->>Port: 送信 (ENQ[0x05] + Body + SumHex2桁 + CR[0x0D] + LF[0x0A])
+        Cmd-->>Driver: 正常完了 (IsCommandGo = true)
+    else 引数範囲外 (0個 または 9個以上) または 送信時例外発生
+        Cmd->>Cmd: _log.LogError / _log.LogCritical ＆ SetErrorAndHalt
+        Cmd-->>Driver: 異常停止 (IsCommandGo = false)
     end
+    deactivate Cmd
 ```
 
 ---
 
 ## 🚫 エラーハンドリング・安全設計（仕様制限）
 
-1. **回線未オープン時の送信防止**:
-   - `Melsec_Open` が実行されていない状態で呼び出された場合、`InvalidOperationException` を送出して停止します。
-2. **不正な局番・コマンド長の検証**:
-   - 局番が 16 進表記でない場合やコマンド名が 2 文字でない場合は、`ArgumentException` を送出して不正電文の送出を防止します。
+1. **引数個数境界の検証および例外保護**:
+   - 引数が 0 個または 9 個以上指定された場合（`ValidateParamRange(1, 8)` 違反）は、`_log.LogError` に記録し `SetErrorAndHalt` により異常電文の送出を遮断します。送信処理中に予期せぬ例外が発生した場合は `_log.LogCritical` に記録し `SetErrorAndHalt(-1, ex.Message)` で安全に停止します。
+2. **局番＋PC 番号の明示指定規約**:
+   - `BuildFrameBody` は渡された各引数トークンをそのままトリム連結します。PC 番号 `"FF"` の自動補完は行われないため、電文本体の先頭が局番 2 桁＋PC 番号 2 桁（例: `"00FF"`）となるよう明示指定してください。
 
 ---
 
@@ -117,4 +124,4 @@ sequenceDiagram
 | No | テストカテゴリ | テスト条件（入力値） | 期待される結果（出力値） | 検証の目的 / 観点 |
 | :---: | :--- | :--- | :--- | :--- |
 | **1** | 正常系 | `IsSimulationMode = true` 環境下で 3 引数 `"00"`, `"FFWR0"`, `"D001002"` を指定して実行 | `!param.HasError` かつ `param.SndData` が `'\u0005' + "00FFWR0D001002" + SQNSUM("00FFWR0D001002") + "\r\n"` と一致する | 形式 4（`ENQ`＋本体＋2 桁サムチェック＋`CR+LF`）電文構築および送信の検証 |
-| **2** | 異常系 | 必須引数欠落・引数 9 個以上の過剰指定（`ValidateParamRange(1, 8)` 違反）、または送信例外発生 | 引数検証エラーによる早期リターン、または `_log.LogCritical` 記録と `SetErrorAndHalt(-1, ex.Message)` による安全停止 | 引数境界チェックおよび送信異常時のクラッシュ防御検証 |
+| **2** | 異常系 | 引数 0 個の空 `TermSequence` を指定して `Func(null, invalidParam)` を実行 | `ValidateParamRange(1, 8)` により拒否され、`invalidParam.HasError == true` かつ `!invalidParam.IsCommandGo` となる | 必須引数欠落（0 個）時のバリデーション拒否および安全停止検証 |

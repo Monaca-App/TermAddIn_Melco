@@ -9,11 +9,11 @@ TITLE, "シーケンサデータ収集 (形式1)"
 ; コマンド定義: PORT_OPEN (通信ポート接続)
 ; ------------------------------------------------------------------------------
 COMMAND, "PORT_OPEN"
-,PARAM, BAUD, List, "ボーレート", "57600", "9600", "19200", "38400", "115200"
-,PARAM, PARITY, List, "パリティ", "O", "E", "N"
-,PARAM, DATA_BITS, List, "データ長", "8", "7"
-,PARAM, STOP_BITS, List, "ストップビット", "1", "2"
-,PARAM, FLOW_CTRL, List, "フロー制御", "NONE", "RTSCTS", "XONXOFF"
+,PARAM, BAUD, List, "ボーレート(空欄=プロパティ)", "", "9600", "19200", "38400", "57600", "115200"
+,PARAM, PARITY, List, "パリティ(空欄=プロパティ)", "", "N", "E", "O"
+,PARAM, DATA_BITS, List, "データ長(空欄=プロパティ)", "", "8", "7"
+,PARAM, STOP_BITS, List, "ストップビット(空欄=プロパティ)", "", "1", "2"
+,PARAM, FLOW_CTRL, List, "フロー制御(空欄=プロパティ)", "", "NONE", "RTSCTS", "XONXOFF"
 ,SEQUENCE, 10, Melsec_Mode, "$BAUD$,$PARITY$,$DATA_BITS$,$STOP_BITS$", "$FLOW_CTRL$", "P1"
 ,SEQUENCE, 20, Melsec_Open
 ,SEQUENCE, 30, Exit
@@ -23,9 +23,9 @@ COMMAND, "PORT_OPEN"
 ; ------------------------------------------------------------------------------
 COMMAND, "READ_START", ON
 ,PARAM, SUB_HEADER, List, "サブヘッダ", "F9", "F8"
-,PARAM, STATION_NO, Text, "局番号", "00"
-,PARAM, NET_NO, Text, "ネットワーク番号", "00"
-,PARAM, PC_NO, Text, "PC番号", "FF"
+,PARAM, STATION_NO, List, "局番号(空欄=プロパティ)", "", "00", "01", "02", "03"
+,PARAM, NET_NO, List, "ネットワーク番号(空欄=プロパティ)", "", "00", "01", "02"
+,PARAM, PC_NO, List, "PC番号(空欄=プロパティ)", "", "FF", "00", "01", "02"
 ,PARAM, UNIT_IO, Text, "要求先ユニットI/O", "00"
 ,PARAM, CMD_READ, List, "読出コマンド", "0401", "0403"
 ,PARAM, CMD_WRITE, List, "書込コマンド", "1401", "1402"
@@ -36,10 +36,10 @@ COMMAND, "READ_START", ON
 ,PARAM, POINTS, Text, "アクセス点数", "0001"
 ,PARAM, VAL_INIT_CTRL, Text, "初期確認設定値", "0004"
 ,PARAM, STATUS, Work, "判定結果", ""
-,SEQUENCE, 10, Melsec_P1s_S, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$$CMD_READ$$SUBCMD$$DEV_TYPE$$ADDR_STATUS$$POINTS$"
-,SEQUENCE, 20, Melsec_Res_P1s_R, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$", "$POINTS$", "STATUS"
+,SEQUENCE, 10, Melsec_P1s_S, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$2$", "$SUBCMD$", "$DEV_TYPE$", "$3$", "$POINTS$"
+,SEQUENCE, 20, Melsec_Res_P1s_R, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$POINTS$", "STATUS"
 ,SEQUENCE, 30, Judge, EQU, "$STATUS$", "0x0000", #ERR_EXIT#
-,SEQUENCE, 40, Melsec_P1s_S, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$$CMD_WRITE$$SUBCMD$$DEV_TYPE$$ADDR_CTRL$$POINTS$$VAL_INIT_CTRL$"
+,SEQUENCE, 40, Melsec_P1s_S, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$2$", "$SUBCMD$", "$DEV_TYPE$", "$3$", "$POINTS$", "$4$"
 ,SEQUENCE, 50, Melsec_Res_P1s_R, "ACK", "DUMMY", "STATUS"
 ,SEQUENCE, 60, Judge, EQU, "$STATUS$", "ACK", #ERR_EXIT#
 ,SEQUENCE, 70, Exit
@@ -50,9 +50,9 @@ COMMAND, "READ_START", ON
 ; ------------------------------------------------------------------------------
 COMMAND, "NUM_READ", "RESULT_DATA"
 ,PARAM, SUB_HEADER, List, "サブヘッダ", "F9", "F8"
-,PARAM, STATION_NO, Text, "局番号", "00"
-,PARAM, NET_NO, Text, "ネットワーク番号", "00"
-,PARAM, PC_NO, Text, "PC番号", "FF"
+,PARAM, STATION_NO, List, "局番号(空欄=プロパティ)", "", "00", "01", "02", "03"
+,PARAM, NET_NO, List, "ネットワーク番号(空欄=プロパティ)", "", "00", "01", "02"
+,PARAM, PC_NO, List, "PC番号(空欄=プロパティ)", "", "FF", "00", "01", "02"
 ,PARAM, UNIT_IO, Text, "要求先ユニットI/O", "00"
 ,PARAM, CMD_READ, List, "読出コマンド", "0401", "0403"
 ,PARAM, CMD_WRITE, List, "書込コマンド", "1401", "1402"
@@ -63,11 +63,11 @@ COMMAND, "NUM_READ", "RESULT_DATA"
 ,PARAM, ADDR_CTRL, Text, "復旧制御アドレス", "007FFF"
 ,PARAM, VAL_RECOVERY, Text, "復旧制御設定値", "0002"
 ,PARAM, RESULT_DATA, Range, "読出データ結果", ""
-,SEQUENCE, #RETRY#, Melsec_P1s_S, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$$CMD_READ$$SUBCMD$$DEV_TYPE$$DEV_ADDR$$POINTS$"
-,SEQUENCE, 20, Melsec_Res_P1s_R, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$", "$POINTS$", "RESULT_DATA", "%X"
+,SEQUENCE, #RETRY#, Melsec_P1s_S, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$2$", "$SUBCMD$", "$DEV_TYPE$", "$3$", "$POINTS$"
+,SEQUENCE, 20, Melsec_Res_P1s_R, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$POINTS$", "RESULT_DATA", "%X"
 ,SEQUENCE, 30, Judge, NEQ, "$RESULT_DATA$", "ERROR_SUMCHECK", #RETRY_FAIL#
 ,SEQUENCE, 40, Exit
-,SEQUENCE, #RETRY_FAIL#, Melsec_P1s_S, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$$CMD_WRITE$$SUBCMD$$DEV_TYPE$$ADDR_CTRL$$POINTS$$VAL_RECOVERY$"
+,SEQUENCE, #RETRY_FAIL#, Melsec_P1s_S, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$2$", "$SUBCMD$", "$DEV_TYPE$", "$3$", "$POINTS$", "$4$"
 ,SEQUENCE, 60, Melsec_Res_P1s_R, "ACK", "DUMMY", "RESULT_DATA"
 ,SEQUENCE, 70, Judge, EQU, "$RESULT_DATA$", "ACK", #RETRY#
 ,SEQUENCE, 80, Exit
@@ -77,9 +77,9 @@ COMMAND, "NUM_READ", "RESULT_DATA"
 ; ------------------------------------------------------------------------------
 COMMAND, "REG_READ", "RESULT_DATA"
 ,PARAM, SUB_HEADER, List, "サブヘッダ", "F9", "F8"
-,PARAM, STATION_NO, Text, "局番号", "00"
-,PARAM, NET_NO, Text, "ネットワーク番号", "00"
-,PARAM, PC_NO, Text, "PC番号", "FF"
+,PARAM, STATION_NO, List, "局番号(空欄=プロパティ)", "", "00", "01", "02", "03"
+,PARAM, NET_NO, List, "ネットワーク番号(空欄=プロパティ)", "", "00", "01", "02"
+,PARAM, PC_NO, List, "PC番号(空欄=プロパティ)", "", "FF", "00", "01", "02"
 ,PARAM, UNIT_IO, Text, "要求先ユニットI/O", "00"
 ,PARAM, CMD_READ, List, "読出コマンド", "0401", "0403"
 ,PARAM, CMD_WRITE, List, "書込コマンド", "1401", "1402"
@@ -90,11 +90,11 @@ COMMAND, "REG_READ", "RESULT_DATA"
 ,PARAM, ADDR_CTRL, Text, "復旧制御アドレス", "007FFF"
 ,PARAM, VAL_RECOVERY, Text, "復旧制御設定値", "0002"
 ,PARAM, RESULT_DATA, Range, "レジスタデータ", ""
-,SEQUENCE, #READ_START#, Melsec_P1s_S, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$$CMD_READ$$SUBCMD$$DEV_TYPE$$DEV_ADDR$$POINTS$"
-,SEQUENCE, 20, Melsec_Res_P1s_R, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$", "$POINTS$", "RESULT_DATA", "%X"
+,SEQUENCE, #READ_START#, Melsec_P1s_S, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$2$", "$SUBCMD$", "$DEV_TYPE$", "$3$", "$POINTS$"
+,SEQUENCE, 20, Melsec_Res_P1s_R, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$POINTS$", "RESULT_DATA", "%X"
 ,SEQUENCE, 30, Judge, NEQ, "$RESULT_DATA$", "ERROR_SUMCHECK", #ERR_RECOVERY#
 ,SEQUENCE, 40, Exit
-,SEQUENCE, #ERR_RECOVERY#, Melsec_P1s_S, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$$CMD_WRITE$$SUBCMD$$DEV_TYPE$$ADDR_CTRL$$POINTS$$VAL_RECOVERY$"
+,SEQUENCE, #ERR_RECOVERY#, Melsec_P1s_S, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$2$", "$SUBCMD$", "$DEV_TYPE$", "$3$", "$POINTS$", "$4$"
 ,SEQUENCE, 60, Melsec_Res_P1s_R, "ACK", "DUMMY", "RESULT_DATA"
 ,SEQUENCE, 70, Judge, EQU, "$RESULT_DATA$", "ACK", #READ_START#
 ,SEQUENCE, 80, Exit
@@ -104,9 +104,9 @@ COMMAND, "REG_READ", "RESULT_DATA"
 ; ------------------------------------------------------------------------------
 COMMAND, "READ_END", ON
 ,PARAM, SUB_HEADER, List, "サブヘッダ", "F9", "F8"
-,PARAM, STATION_NO, Text, "局番号", "00"
-,PARAM, NET_NO, Text, "ネットワーク番号", "00"
-,PARAM, PC_NO, Text, "PC番号", "FF"
+,PARAM, STATION_NO, List, "局番号(空欄=プロパティ)", "", "00", "01", "02", "03"
+,PARAM, NET_NO, List, "ネットワーク番号(空欄=プロパティ)", "", "00", "01", "02"
+,PARAM, PC_NO, List, "PC番号(空欄=プロパティ)", "", "FF", "00", "01", "02"
 ,PARAM, UNIT_IO, Text, "要求先ユニットI/O", "00"
 ,PARAM, CMD_READ, List, "読出コマンド", "0401", "0403"
 ,PARAM, CMD_WRITE, List, "書込コマンド", "1401", "1402"
@@ -118,13 +118,13 @@ COMMAND, "READ_END", ON
 ,PARAM, VAL_FINISH_1, Text, "終了処理設定値1", "0001"
 ,PARAM, VAL_RESET, Text, "復旧初期設定値", "0000"
 ,PARAM, STATUS, Work, "判定結果", ""
-,SEQUENCE, 10, Melsec_P1s_S, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$$CMD_WRITE$$SUBCMD$$DEV_TYPE$$ADDR_CTRL$$POINTS$$VAL_FINISH_1$"
+,SEQUENCE, 10, Melsec_P1s_S, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$2$", "$SUBCMD$", "$DEV_TYPE$", "$3$", "$POINTS$", "$4$"
 ,SEQUENCE, 20, Melsec_Res_P1s_R, "ACK", "DUMMY", "STATUS"
 ,SEQUENCE, 30, Judge, EQU, "$STATUS$", "ACK", #ERR_EXIT#
-,SEQUENCE, #CHECK_LOOP#, Melsec_P1s_S, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$$CMD_READ$$SUBCMD$$DEV_TYPE$$ADDR_STATUS$$POINTS$"
-,SEQUENCE, 50, Melsec_Res_P1s_R, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$", "$POINTS$", "STATUS"
+,SEQUENCE, #CHECK_LOOP#, Melsec_P1s_S, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$2$", "$SUBCMD$", "$DEV_TYPE$", "$3$", "$POINTS$"
+,SEQUENCE, 50, Melsec_Res_P1s_R, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$POINTS$", "STATUS"
 ,SEQUENCE, 60, Judge, EQU, "$STATUS$", "0x0001", #CHECK_LOOP#
-,SEQUENCE, 70, Melsec_P1s_S, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$$CMD_WRITE$$SUBCMD$$DEV_TYPE$$ADDR_CTRL$$POINTS$$VAL_RESET$"
+,SEQUENCE, 70, Melsec_P1s_S, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$2$", "$SUBCMD$", "$DEV_TYPE$", "$3$", "$POINTS$", "$4$"
 ,SEQUENCE, 80, Melsec_Res_P1s_R, "ACK", "DUMMY", "STATUS"
 ,SEQUENCE, 90, Judge, EQU, "$STATUS$", "ACK", #ERR_EXIT#
 ,SEQUENCE, 100, Exit
@@ -135,9 +135,9 @@ COMMAND, "READ_END", ON
 ; ------------------------------------------------------------------------------
 COMMAND, "PORT_CLOSE"
 ,PARAM, SUB_HEADER, List, "サブヘッダ", "F9", "F8"
-,PARAM, STATION_NO, Text, "局番号", "00"
-,PARAM, NET_NO, Text, "ネットワーク番号", "00"
-,PARAM, PC_NO, Text, "PC番号", "FF"
+,PARAM, STATION_NO, List, "局番号(空欄=プロパティ)", "", "00", "01", "02", "03"
+,PARAM, NET_NO, List, "ネットワーク番号(空欄=プロパティ)", "", "00", "01", "02"
+,PARAM, PC_NO, List, "PC番号(空欄=プロパティ)", "", "FF", "00", "01", "02"
 ,PARAM, UNIT_IO, Text, "要求先ユニットI/O", "00"
 ,PARAM, CMD_WRITE, List, "書込コマンド", "1401", "1402"
 ,PARAM, SUBCMD, List, "サブコマンド", "0000", "0001", "0080", "0081"
@@ -146,7 +146,7 @@ COMMAND, "PORT_CLOSE"
 ,PARAM, POINTS, Text, "アクセス点数", "0001"
 ,PARAM, VAL_RESET, Text, "復旧初期設定値", "0000"
 ,PARAM, STATUS, Work, "判定結果", ""
-,SEQUENCE, 10, Melsec_P1s_S, "$SUB_HEADER$$STATION_NO$$NET_NO$$PC_NO$$UNIT_IO$$CMD_WRITE$$SUBCMD$$DEV_TYPE$$ADDR_CTRL$$POINTS$$VAL_RESET$"
+,SEQUENCE, 10, Melsec_P1s_S, "$SUB_HEADER$", "$STATION_NO$", "$NET_NO$", "$PC_NO$", "$UNIT_IO$", "$2$", "$SUBCMD$", "$DEV_TYPE$", "$3$", "$POINTS$", "$4$"
 ,SEQUENCE, 20, Melsec_Res_P1s_R, "ACK", "DUMMY", "STATUS"
 ,SEQUENCE, 30, Melsec_Close
 ,SEQUENCE, 40, Exit
